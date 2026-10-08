@@ -1,0 +1,146 @@
+{
+  "metrics": [
+    {
+      "title": "Total Revenue",
+      "value": "$54,230",
+      "description": "Monthly revenue",
+      "change": "+12%",
+      "trend": "up",
+      "iconKey": "DollarSign",
+      "footer": "Trending up this month",
+      "subfooter": "Revenue for the last 6 months"
+    },
+    {
+      "title": "Active Customers",
+      "value": "2,350",
+      "description": "Total active users",
+      "change": "+5.2%",
+      "trend": "up",
+      "iconKey": "Users",
+      "footer": "Strong user retention",
+      "subfooter": "Engagement exceeds targets"
+    },
+    {
+      "title": "Total Orders",
+      "value": "1,247",
+      "description": "Orders this month",
+      "change": "-2.1%",
+      "trend": "down",
+      "iconKey": "ShoppingCart",
+      "footer": "Down 2% this period",
+      "subfooter": "Order volume needs attention"
+    },
+    {
+      "title": "Conversion Rate",
+      "value": "3.24%",
+      "description": "Average conversion",
+      "change": "+8.3%",
+      "trend": "up",
+      "iconKey": "BarChart3",
+      "footer": "Steady performance increase",
+      "subfooter": "Meets conversion projections"
+    }
+  ],
+  "salesData": [
+    { "month": "Jan", "sales": 12500, "target": 15000 },
+    { "month": "Feb", "sales": 18200, "target": 15000 },
+    { "month": "Mar", "sales": 16800, "target": 15000 },
+    { "month": "Apr", "sales": 22400, "target": 20000 },
+    { "month": "May", "sales": 24600, "target": 20000 },
+    { "month": "Jun", "sales": 28200, "target": 25000 },
+    { "month": "Jul", "sales": 31500, "target": 25000 },
+    { "month": "Aug", "sales": 29800, "target": 25000 },
+    { "month": "Sep", "sales": 33200, "target": 30000 },
+    { "month": "Oct", "sales": 35100, "target": 30000 },
+    { "month": "Nov", "sales": 38900, "target": 35000 },
+    { "month": "Dec", "sales": 42300, "target": 35000 }
+  ],
+  "revenueBreakdown": [
+    { "category": "subscriptions", "label": "Subscriptions", "value": 45, "amount": 24500 },
+    { "category": "sales", "label": "One-time Sales", "value": 30, "amount": 16300 },
+    { "category": "services", "label": "Services", "value": 15, "amount": 8150 },
+    { "category": "partnerships", "label": "Partnerships", "value": 10, "amount": 5430 }
+  ],
+  "transactions": [
+    {
+      "id": "TXN-001",
+      "customerName": "Olivia Martin",
+      "customerEmail": "olivia.martin@email.com",
+      "customerAvatar": "https://notion-avatars.netlify.app/api/avatar/?preset=female-7",
+      "amount": "$1,999.00",
+      "status": "completed",
+      "date": "2 hours ago"
+    },
+    {
+      "id": "TXN-002",
+      "customerName": "Jackson Lee",
+      "customerEmail": "jackson.lee@email.com",
+      "customerAvatar": "https://notion-avatars.netlify.app/api/avatar/?preset=male-1",
+      "amount": "$2,999.00",
+      "status": "pending",
+      "date": "5 hours ago"
+    },
+    {
+      "id": "TXN-003",
+      "customerName": "Isabella Nguyen",
+      "customerEmail": "isabella.nguyen@email.com",
+      "customerAvatar": "https://notion-avatars.netlify.app/api/avatar/?preset=female-2",
+      "amount": "$39.00",
+      "status": "completed",
+      "date": "1 day ago"
+    },
+    {
+      "id": "TXN-004",
+      "customerName": "William Kim",
+      "customerEmail": "will@email.com",
+      "customerAvatar": "https://notion-avatars.netlify.app/api/avatar/?preset=male-5",
+      "amount": "$299.00",
+      "status": "failed",
+      "date": "2 days ago"
+    },
+    {
+      "id": "TXN-005",
+      "customerName": "Sofia Davis",
+      "customerEmail": "sofia.davis@email.com",
+      "customerAvatar": "https://notion-avatars.netlify.app/api/avatar/?preset=female-4",
+      "amount": "$99.00",
+      "status": "completed",
+      "date": "3 days ago"
+    }
+  ],
+  "products": [
+    { "id": 1, "name": "Premium Dashboard", "sales": 2847, "revenue": "$142,350", "growth": "+23%", "rating": 4.8, "stock": 145, "category": "Software" },
+    { "id": 2, "name": "Analytics Pro", "sales": 1923, "revenue": "$96,150", "growth": "+18%", "rating": 4.6, "stock": 67, "category": "Tools" },
+    { "id": 3, "name": "Mobile App Suite", "sales": 1456, "revenue": "$72,800", "growth": "+12%", "rating": 4.9, "stock": 234, "category": "Mobile" },
+    { "id": 4, "name": "Enterprise License", "sales": 892, "revenue": "$178,400", "growth": "+8%", "rating": 4.7, "stock": 12, "category": "Enterprise" },
+    { "id": 5, "name": "Basic Subscription", "sales": 3421, "revenue": "$68,420", "growth": "+31%", "rating": 4.4, "stock": 999, "category": "Subscription" }
+  ],
+  "customerGrowth": [
+    { "month": "Jan", "new": 245, "returning": 890, "churn": 45 },
+    { "month": "Feb", "new": 312, "returning": 934, "churn": 52 },
+    { "month": "Mar", "new": 289, "returning": 1023, "churn": 38 },
+    { "month": "Apr", "new": 456, "returning": 1156, "churn": 61 },
+    { "month": "May", "new": 523, "returning": 1298, "churn": 47 },
+    { "month": "Jun", "new": 634, "returning": 1445, "churn": 55 }
+  ],
+  "demographics": [
+    { "ageGroup": "18-24", "customers": 2847, "percentage": "18.0%", "growth": "+15.2%", "growthColor": "text-green-600" },
+    { "ageGroup": "25-34", "customers": 4521, "percentage": "28.5%", "growth": "+8.7%", "growthColor": "text-green-600" },
+    { "ageGroup": "35-44", "customers": 3982, "percentage": "25.1%", "growth": "+3.4%", "growthColor": "text-blue-600" },
+    { "ageGroup": "45-54", "customers": 2734, "percentage": "17.2%", "growth": "+1.2%", "growthColor": "text-orange-600" },
+    { "ageGroup": "55+", "customers": 1763, "percentage": "11.2%", "growth": "-2.1%", "growthColor": "text-red-600" }
+  ],
+  "regions": [
+    { "region": "North America", "customers": 6847, "revenue": "$847,523", "growth": "+12.3%", "growthColor": "text-green-600" },
+    { "region": "Europe", "customers": 4521, "revenue": "$563,891", "growth": "+9.7%", "growthColor": "text-green-600" },
+    { "region": "Asia Pacific", "customers": 2892, "revenue": "$321,456", "growth": "+18.4%", "growthColor": "text-blue-600" },
+    { "region": "Latin America", "customers": 1123, "revenue": "$187,234", "growth": "+15.8%", "growthColor": "text-green-600" },
+    { "region": "Others", "customers": 464, "revenue": "$67,891", "growth": "+5.2%", "growthColor": "text-orange-600" }
+  ],
+  "customerInsightMetrics": [
+    { "label": "Total Customers", "value": "15,847", "trend": "+12.5% from last month", "trendDirection": "up" },
+    { "label": "Retention Rate", "value": "92.4%", "trend": "+2.1% improvement", "trendDirection": "up" },
+    { "label": "Avg. LTV", "value": "$2,847", "trend": "+8.3% growth", "trendDirection": "up" }
+  ],
+  "lastUpdated": "2025-08-12T15:30:00Z"
+}

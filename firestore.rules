@@ -1,0 +1,68 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─── Customers Collection (RLS - Row-Level Security) ──────────
+    // Each customer document has a `userId` field that must match the
+    // authenticated user's UID. This enforces row-level security so users
+    // can only read, create, update, and delete their own customer records.
+
+    match /customers/{customerId} {
+      // Read: user must be authenticated and own the document (RLS).
+      // Admins can read all customer records.
+      allow read: if request.auth != null
+        && (resource.data.userId == request.auth.uid || isAdmin());
+
+      // Create: authenticated users must set userId to their own UID.
+      // Public (unauthenticated) creates are allowed for the lead capture form
+      // (userId will be empty string for public submissions).
+      allow create: if (request.auth == null
+        && request.resource.data.userId == "")
+        || (request.auth != null
+        && request.resource.data.userId == request.auth.uid);
+
+      // Update: user must be authenticated and own the document.
+      // The userId field cannot be changed to a different user.
+      // Admins can update any customer record.
+      allow update: if request.auth != null
+        && (resource.data.userId == request.auth.uid || isAdmin())
+        && request.resource.data.userId == request.auth.uid;
+
+      // Delete: user must be authenticated and own the document.
+      // Admins can delete any customer record.
+      allow delete: if request.auth != null
+        && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    // ─── Users Collection ─────────────────────────────────────────
+    // Users can read and update their own profile data.
+    match /users/{userId} {
+      allow read: if request.auth != null
+        && (request.auth.uid == userId || isAdmin());
+      allow write: if request.auth != null
+        && request.auth.uid == userId;
+    }
+
+    // ─── Tasks Collection ─────────────────────────────────────────
+    // Authenticated users can read/write tasks.
+    match /tasks/{taskId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // ─── Folders Collection ────────────────────────────────────────
+    // Folders organize documents and are shared across all users (no RLS).
+    // The Document Manager role restriction for create/update/delete is
+    // enforced at the application layer.
+    match /folders/{folderId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // ─── Helper Functions ──────────────────────────────────────────
+    function isAdmin() {
+      return request.auth != null
+        && 'roles' in request.auth.token
+        && request.auth.token.roles.has('admin');
+    }
+  }
+}

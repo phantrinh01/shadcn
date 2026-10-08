@@ -1,0 +1,11 @@
+[
+  { "id": "ur-001", "uid": "mock-uid-001", "roleId": "role-admin", "createdAt": "2024-01-15T00:00:00Z" },
+  { "id": "ur-002", "uid": "mock-uid-002", "roleId": "role-editor", "createdAt": "2024-02-20T00:00:00Z" },
+  { "id": "ur-003", "uid": "mock-uid-003", "roleId": "role-author", "createdAt": "2024-03-10T00:00:00Z" },
+  { "id": "ur-004", "uid": "mock-uid-004", "roleId": "role-maintainer", "createdAt": "2024-01-25T00:00:00Z" },
+  { "id": "ur-005", "uid": "mock-uid-005", "roleId": "role-editor", "createdAt": "2024-04-05T00:00:00Z" },
+  { "id": "ur-006", "uid": "mock-uid-005", "roleId": "role-author", "createdAt": "2024-04-05T00:00:00Z" },
+  { "id": "ur-007", "uid": "mock-uid-006", "roleId": "role-subscriber", "createdAt": "2024-05-12T00:00:00Z" },
+  { "id": "ur-008", "uid": "mock-uid-007", "roleId": "role-maintainer", "createdAt": "2024-06-18T00:00:00Z" },
+  { "id": "ur-009", "uid": "mock-uid-008", "roleId": "role-author", "createdAt": "2024-07-22T00:00:00Z" }
+]

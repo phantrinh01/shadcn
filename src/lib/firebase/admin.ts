@@ -94,6 +94,27 @@ function initAdminApp(): App {
   return initializeApp({ projectId: fallbackProjectId })
 }
 
+/**
+ * True when the Admin SDK has credentials it can use without probing.
+ *
+ * Without explicit credentials the SDK falls back to Application Default
+ * Credentials, which off Google Cloud (e.g. on Vercel) spends several seconds
+ * probing the GCE metadata server before failing on every call. Callers on
+ * hot paths (login, session checks) should skip Admin calls when this is false.
+ */
+export function hasAdminCredentials(): boolean {
+  const env = process.env
+  return Boolean(
+    (env.FIREBASE_ADMIN_PROJECT_ID &&
+      env.FIREBASE_ADMIN_CLIENT_EMAIL &&
+      env.FIREBASE_ADMIN_PRIVATE_KEY) ||
+      env.FIREBASE_SERVICE_ACCOUNT_KEY ||
+      env.GOOGLE_APPLICATION_CREDENTIALS ||
+      env.K_SERVICE || // Cloud Run
+      env.FUNCTION_TARGET // Cloud Functions
+  )
+}
+
 export function getAdminApp(): App {
   if (!cachedApp) {
     cachedApp = initAdminApp()

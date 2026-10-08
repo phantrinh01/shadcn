@@ -1,4 +1,4 @@
-import { getAdminDb } from "@/lib/firebase/admin"
+import { getAdminDb, hasAdminCredentials } from "@/lib/firebase/admin"
 
 import {
   ADMIN_ROLE_ID,
@@ -17,6 +17,12 @@ export async function getUserAuthorization(
 ): Promise<UserAuthorization> {
   if (isAdminIdentifier(email) || isAdminIdentifier(username)) {
     return { roles: [ADMIN_ROLE_ID], isAdmin: true }
+  }
+
+  // Skip Firestore entirely when the Admin SDK isn't configured; otherwise it
+  // stalls every login/session request while probing for default credentials.
+  if (!hasAdminCredentials()) {
+    return { roles: [], isAdmin: false }
   }
 
   try {

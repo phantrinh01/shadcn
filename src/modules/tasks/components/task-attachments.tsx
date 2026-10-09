@@ -23,6 +23,12 @@ function formatSize(bytes: number): string {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`
 }
 
+/** Thông báo lỗi kèm mã Firebase (vd. storage/unauthorized) để dễ chẩn đoán. */
+export function describeUploadError(name: string, error: unknown): string {
+  const code = (error as { code?: string } | null)?.code
+  return `Không thể tải lên "${name}"${code ? ` (${code})` : ""}. Vui lòng thử lại.`
+}
+
 /** Lọc file hợp lệ; file không hợp lệ báo lỗi bằng toast. */
 export function pickValidFiles(files: File[]): File[] {
   return files.filter((file) => {
@@ -162,7 +168,7 @@ export function TaskAttachments({
           toast.success(`Đã tải lên "${file.name}"`)
         } catch (error) {
           console.error("Failed to upload attachment:", error)
-          toast.error(`Không thể tải lên "${file.name}". Vui lòng thử lại.`)
+          toast.error(describeUploadError(file.name, error))
         } finally {
           setUploading((prev) => prev.filter((item) => item.key !== key))
         }

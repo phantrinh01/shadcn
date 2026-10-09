@@ -24,6 +24,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import type {
+  Attachment,
   Task,
   TaskAssignee,
 } from "@/modules/tasks/services/types/task-types"
@@ -33,6 +34,7 @@ export interface TaskActionHandlers {
   onUpdateTask?: (task: Task) => void | Promise<void>
   onDeleteTask?: (taskId: string) => void | Promise<void>
   onDuplicateTask?: (task: Task) => void | Promise<void>
+  onAttachmentsChange?: (taskId: string, attachments: Attachment[]) => void
 }
 
 interface TaskActionsMenuProps extends TaskActionHandlers {
@@ -46,6 +48,7 @@ export function TaskActionsMenu({
   onUpdateTask,
   onDeleteTask,
   onDuplicateTask,
+  onAttachmentsChange,
   assignees = [],
 }: TaskActionsMenuProps) {
   const [editOpen, setEditOpen] = React.useState(false)
@@ -136,6 +139,7 @@ export function TaskActionsMenu({
         open={editOpen}
         onOpenChange={setEditOpen}
         onUpdateTask={onUpdateTask}
+        onAttachmentsChange={onAttachmentsChange}
         assignees={assignees}
       />
     </>

@@ -61,6 +61,7 @@ export function CalendarView({
   assignees,
   onAddTask,
   onUpdateTask,
+  onAttachmentsChange,
 }: CalendarViewProps) {
   const [month, setMonth] = React.useState(() => startOfMonth(new Date()))
   const [editingId, setEditingId] = React.useState<string | null>(null)
@@ -281,6 +282,7 @@ export function CalendarView({
           open
           onOpenChange={(open) => !open && setEditingId(null)}
           onUpdateTask={onUpdateTask}
+          onAttachmentsChange={onAttachmentsChange}
           assignees={assignees}
         />
       ) : null}

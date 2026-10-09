@@ -5,6 +5,7 @@ import type { ColumnDef } from "@tanstack/react-table"
 import { Checkbox } from "@/components/ui/checkbox"
 
 import type {
+  Attachment,
   Task,
   TaskAssignee,
 } from "@/modules/tasks/services/types/task-types"
@@ -16,6 +17,7 @@ interface TaskColumnActions {
   onUpdateTask?: (task: Task) => void | Promise<void>
   onDeleteTask?: (taskId: string) => void | Promise<void>
   onDuplicateTask?: (task: Task) => void | Promise<void>
+  onAttachmentsChange?: (taskId: string, attachments: Attachment[]) => void
   assignees?: TaskAssignee[]
 }
 
@@ -23,6 +25,7 @@ export function getTaskColumns({
   onUpdateTask,
   onDeleteTask,
   onDuplicateTask,
+  onAttachmentsChange,
   assignees = [],
 }: TaskColumnActions = {}): ColumnDef<Task>[] {
   const assigneeNames = new Map(assignees.map((m) => [m.uid, m.name]))
@@ -135,6 +138,7 @@ export function getTaskColumns({
           onUpdateTask={onUpdateTask}
           onDeleteTask={onDeleteTask}
           onDuplicateTask={onDuplicateTask}
+          onAttachmentsChange={onAttachmentsChange}
           assignees={assignees}
         />
       ),

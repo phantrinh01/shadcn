@@ -11,7 +11,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
 import type {
+  Attachment,
   Task,
   TaskAssignee,
 } from "@/modules/tasks/services/types/task-types"
@@ -21,12 +23,14 @@ import {
   taskToFormValues,
   type TaskFormValues,
 } from "./task-form-fields"
+import { TaskAttachments } from "./task-attachments"
 
 interface TaskEditDialogProps {
   task: Task
   open: boolean
   onOpenChange: (open: boolean) => void
   onUpdateTask?: (task: Task) => void | Promise<void>
+  onAttachmentsChange?: (taskId: string, attachments: Attachment[]) => void
   assignees?: TaskAssignee[]
 }
 
@@ -35,6 +39,7 @@ export function TaskEditDialog({
   open,
   onOpenChange,
   onUpdateTask,
+  onAttachmentsChange,
   assignees = [],
 }: TaskEditDialogProps) {
   const [draft, setDraft] = React.useState<TaskFormValues>(() =>
@@ -96,6 +101,17 @@ export function TaskEditDialog({
             assignees={assignees}
             errors={fieldErrors}
           />
+
+          <div className="space-y-2">
+            <Label>Attachments</Label>
+            <TaskAttachments
+              taskId={task.id}
+              attachments={task.attachments ?? []}
+              onChange={(attachments) =>
+                onAttachmentsChange?.(task.id, attachments)
+              }
+            />
+          </div>
         </div>
 
         <DialogFooter>

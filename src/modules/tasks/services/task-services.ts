@@ -18,13 +18,13 @@ import { isTaskOverdue } from "./task-dates"
 import { taskMockData } from "./task-mock-data"
 import { taskSchema, type Task, type TaskInput } from "./types/task-types"
 
-const TASKS_COLLECTION = "tasks"
+export const TASKS_COLLECTION = "tasks"
 
 // firestore.rules yêu cầu request.auth != null cho `tasks`, nên phải đợi
 // Firebase Auth khôi phục session trước khi gọi Firestore.
 let authReady: Promise<void> | null = null
 
-function waitForAuth(): Promise<void> {
+export function waitForAuth(): Promise<void> {
   authReady ??= new Promise<void>((resolve, reject) => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       unsubscribe()
@@ -59,6 +59,12 @@ function fromFirestore(id: string, data: DocumentData): Task | null {
     due_date: toIso(data.due_date) ?? null,
     description: data.description ?? "",
     tags: Array.isArray(data.tags) ? data.tags : [],
+    attachments: Array.isArray(data.attachments)
+      ? data.attachments.map((item: DocumentData) => ({
+          ...item,
+          uploadedAt: toIso(item.uploadedAt) ?? "",
+        }))
+      : [],
     created_at: toIso(data.created_at),
     updated_at: toIso(data.updated_at),
   })
@@ -147,7 +153,13 @@ export async function createTask(input: TaskInput): Promise<Task> {
   })
 
   const now = new Date().toISOString()
-  return { ...input, id: ref.id, created_at: now, updated_at: now }
+  return {
+    ...input,
+    id: ref.id,
+    attachments: [],
+    created_at: now,
+    updated_at: now,
+  }
 }
 
 export async function updateTask(task: Task): Promise<Task> {

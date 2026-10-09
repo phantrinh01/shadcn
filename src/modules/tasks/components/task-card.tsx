@@ -33,6 +33,7 @@ export function TaskCard({
   onUpdateTask,
   onDeleteTask,
   onDuplicateTask,
+  onAttachmentsChange,
 }: TaskCardProps) {
   const assignee = assignees.find((member) => member.uid === task.assignee)
 
@@ -59,6 +60,7 @@ export function TaskCard({
               onUpdateTask={onUpdateTask}
               onDeleteTask={onDeleteTask}
               onDuplicateTask={onDuplicateTask}
+              onAttachmentsChange={onAttachmentsChange}
             />
           </div>
         </div>

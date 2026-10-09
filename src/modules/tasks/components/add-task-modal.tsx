@@ -12,6 +12,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
 import type {
   TaskAssignee,
   TaskInput,
@@ -23,9 +24,10 @@ import {
   TaskFormFields,
   type TaskFormValues,
 } from "./task-form-fields"
+import { PendingAttachments } from "./task-attachments"
 
 interface AddTaskModalProps {
-  onAddTask?: (task: TaskInput) => void | Promise<void>
+  onAddTask?: (task: TaskInput, files?: File[]) => void | Promise<void>
   assignees?: TaskAssignee[]
   trigger?: React.ReactNode
   defaultStatus?: TaskStatus
@@ -47,11 +49,13 @@ export function AddTaskModal({
   }
   const [open, setOpen] = useState(false)
   const [values, setValues] = useState<TaskFormValues>(initialValues)
+  const [files, setFiles] = useState<File[]>([])
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const reset = () => {
     setValues(initialValues)
+    setFiles([])
     setErrors({})
   }
 
@@ -66,7 +70,7 @@ export function AddTaskModal({
 
     try {
       setIsSubmitting(true)
-      await onAddTask?.(result.data)
+      await onAddTask?.(result.data, files)
       reset()
       setOpen(false)
     } catch (error) {
@@ -120,6 +124,15 @@ export function AddTaskModal({
             assignees={assignees}
             errors={errors}
           />
+
+          <div className="space-y-2">
+            <Label>Attachments</Label>
+            <PendingAttachments
+              files={files}
+              onFilesChange={setFiles}
+              disabled={isSubmitting}
+            />
+          </div>
 
           <div className="flex justify-end space-x-2 pt-2">
             <Button

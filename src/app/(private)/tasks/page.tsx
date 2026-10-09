@@ -19,6 +19,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { uploadAttachment } from "@/modules/tasks/services/task-attachment-services"
 import { getUsers } from "@/modules/users/services/user-services"
 import { getTaskColumns } from "@/modules/tasks/components/columns"
 import { BoardView } from "@/modules/tasks/components/board-view"
@@ -49,6 +50,7 @@ import {
 } from "@/modules/tasks/services/task-services"
 import {
   TASK_TITLE_MAX_LENGTH,
+  type Attachment,
   type Task,
   type TaskAssignee,
   type TaskInput,
@@ -105,10 +107,42 @@ function TaskPageContent() {
     loadData()
   }, [refreshTasks])
 
-  const handleAddTask = useCallback(async (input: TaskInput) => {
-    const created = await createTask(input)
-    setTasks((prev) => [created, ...prev])
-  }, [])
+  const handleAddTask = useCallback(
+    async (input: TaskInput, files: File[] = []) => {
+      const created = await createTask(input)
+      setTasks((prev) => [created, ...prev])
+
+      // Task đã tạo xong; file nào lỗi chỉ báo riêng, không làm hỏng việc tạo task.
+      const attachments: Attachment[] = []
+      for (const file of files) {
+        try {
+          attachments.push(await uploadAttachment(created.id, file))
+        } catch (error) {
+          console.error("Failed to upload attachment:", error)
+          toast.error(
+            `Không thể tải lên "${file.name}". Hãy thêm lại trong phần Edit Task.`
+          )
+        }
+      }
+      if (attachments.length) {
+        setTasks((prev) =>
+          prev.map((task) =>
+            task.id === created.id ? { ...task, attachments } : task
+          )
+        )
+      }
+    },
+    []
+  )
+
+  const handleAttachmentsChange = useCallback(
+    (taskId: string, attachments: Attachment[]) => {
+      setTasks((prev) =>
+        prev.map((task) => (task.id === taskId ? { ...task, attachments } : task))
+      )
+    },
+    []
+  )
 
   const handleUpdateTask = useCallback(async (task: Task) => {
     await updateTask(task)
@@ -154,9 +188,10 @@ function TaskPageContent() {
         onUpdateTask: handleUpdateTask,
         onDeleteTask: handleDeleteTask,
         onDuplicateTask: handleDuplicateTask,
+        onAttachmentsChange: handleAttachmentsChange,
         assignees,
       }),
-    [assignees, handleDeleteTask, handleDuplicateTask, handleUpdateTask]
+    [assignees, handleAttachmentsChange, handleDeleteTask, handleDuplicateTask, handleUpdateTask]
   )
 
   const handleViewChange = useCallback(
@@ -385,6 +420,7 @@ function TaskPageContent() {
                   onUpdateTask={handleUpdateTask}
                   onDeleteTask={handleDeleteTask}
                   onDuplicateTask={handleDuplicateTask}
+                  onAttachmentsChange={handleAttachmentsChange}
                 />
               ) : view === "grid" ? (
                 <GridView
@@ -393,6 +429,7 @@ function TaskPageContent() {
                   onUpdateTask={handleUpdateTask}
                   onDeleteTask={handleDeleteTask}
                   onDuplicateTask={handleDuplicateTask}
+                  onAttachmentsChange={handleAttachmentsChange}
                 />
               ) : (
                 <CalendarView
@@ -400,6 +437,7 @@ function TaskPageContent() {
                   assignees={assignees}
                   onAddTask={handleAddTask}
                   onUpdateTask={handleUpdateTask}
+                  onAttachmentsChange={handleAttachmentsChange}
                 />
               )}
             </div>

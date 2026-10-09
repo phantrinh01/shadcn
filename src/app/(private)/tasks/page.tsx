@@ -2,7 +2,14 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import { ArrowUp, BarChart3, CheckCircle2, Clock, ListTodo } from "lucide-react"
+import {
+  AlertTriangle,
+  ArrowUp,
+  BarChart3,
+  CheckCircle2,
+  Clock,
+  ListTodo,
+} from "lucide-react"
 
 import {
   Card,
@@ -17,6 +24,7 @@ import { BoardView } from "@/modules/tasks/components/board-view"
 import { CalendarView } from "@/modules/tasks/components/calendar-view"
 import { DataTable } from "@/modules/tasks/components/data-table"
 import { GridView } from "@/modules/tasks/components/grid-view"
+import { isTaskOverdue } from "@/modules/tasks/components/task-badges"
 import {
   defaultTaskFilters,
   filterTasks,
@@ -207,7 +215,7 @@ function TaskPageContent() {
         )}
       >
         {/* Stats Cards */}
-        <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+        <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
           <Card>
             <CardContent>
               <div className="flex items-center justify-between">
@@ -297,6 +305,41 @@ function TaskPageContent() {
               </div>
             </CardContent>
           </Card>
+
+          <Card
+            className={cn(
+              stats.overdue > 0 && "border-red-500/70 bg-red-50/40 dark:bg-red-950/20"
+            )}
+          >
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-muted-foreground text-sm font-medium">
+                    Quá hạn
+                  </p>
+                  <div className="mt-1 flex items-baseline gap-2">
+                    <span
+                      className={cn(
+                        "text-2xl font-bold",
+                        stats.overdue > 0 && "text-red-600 dark:text-red-400"
+                      )}
+                    >
+                      {stats.overdue}
+                    </span>
+                  </div>
+                </div>
+                <div
+                  className={cn(
+                    "bg-secondary rounded-lg p-3",
+                    stats.overdue > 0 &&
+                      "bg-red-100 text-red-600 dark:bg-red-950 dark:text-red-400"
+                  )}
+                >
+                  <AlertTriangle className="size-6" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Data Table */}
@@ -322,7 +365,15 @@ function TaskPageContent() {
               {loading ? (
                 <TaskViewSkeleton />
               ) : view === "table" ? (
-                <DataTable data={filteredTasks} columns={taskColumns} />
+                <DataTable
+                  data={filteredTasks}
+                  columns={taskColumns}
+                  getRowClassName={(task) =>
+                    isTaskOverdue(task)
+                      ? "bg-red-50/50 dark:bg-red-950/20 [&>td:first-child]:border-l-2 [&>td:first-child]:border-l-red-500"
+                      : undefined
+                  }
+                />
               ) : view === "board" ? (
                 <BoardView
                   tasks={filteredTasks}
@@ -344,6 +395,7 @@ function TaskPageContent() {
                 <CalendarView
                   tasks={filteredTasks}
                   assignees={assignees}
+                  onAddTask={handleAddTask}
                   onUpdateTask={handleUpdateTask}
                 />
               )}

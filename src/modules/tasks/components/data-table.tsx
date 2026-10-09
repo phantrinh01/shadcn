@@ -27,11 +27,14 @@ import { DataTableToolbar } from "./data-table-toolbar"
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
+  /** Class thêm cho từng dòng (vd. accent cảnh báo quá hạn). */
+  getRowClassName?: (row: TData) => string | undefined
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
+  getRowClassName,
 }: DataTableProps<TData, TValue>) {
   const [rowSelection, setRowSelection] = React.useState({})
   const [columnVisibility, setColumnVisibility] =
@@ -84,6 +87,7 @@ export function DataTable<TData, TValue>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
+                  className={getRowClassName?.(row.original)}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>

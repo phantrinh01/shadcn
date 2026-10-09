@@ -9,6 +9,8 @@ import type {
 import {
   AssigneeAvatar,
   DueDate,
+  isTaskOverdue,
+  OverdueBadge,
   PriorityBadge,
   StatusLabel,
   TagBadges,
@@ -35,7 +37,14 @@ export function TaskCard({
   const assignee = assignees.find((member) => member.uid === task.assignee)
 
   return (
-    <Card className={cn("gap-3 py-4", className)}>
+    <Card
+      className={cn(
+        "gap-3 py-4",
+        isTaskOverdue(task) &&
+          "border-red-500/70 bg-red-50/40 dark:bg-red-950/20",
+        className
+      )}
+    >
       <CardContent className="space-y-3 px-4">
         <div className="flex items-start justify-between gap-2">
           <p className="line-clamp-2 text-sm font-medium">{task.title}</p>
@@ -57,6 +66,7 @@ export function TaskCard({
         <div className="flex flex-wrap items-center gap-2">
           <PriorityBadge priority={task.priority} />
           {showStatus ? <StatusLabel status={task.status} /> : null}
+          <OverdueBadge task={task} />
         </div>
 
         <TagBadges tags={task.tags} />

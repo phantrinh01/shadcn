@@ -29,6 +29,8 @@ interface AddTaskModalProps {
   assignees?: TaskAssignee[]
   trigger?: React.ReactNode
   defaultStatus?: TaskStatus
+  /** Hạn mặc định, định dạng yyyy-MM-dd. */
+  defaultDueDate?: string
 }
 
 export function AddTaskModal({
@@ -36,8 +38,13 @@ export function AddTaskModal({
   assignees = [],
   trigger,
   defaultStatus = "todo",
+  defaultDueDate = "",
 }: AddTaskModalProps) {
-  const initialValues: TaskFormValues = { ...emptyTaskForm, status: defaultStatus }
+  const initialValues: TaskFormValues = {
+    ...emptyTaskForm,
+    status: defaultStatus,
+    due_date: defaultDueDate,
+  }
   const [open, setOpen] = useState(false)
   const [values, setValues] = useState<TaskFormValues>(initialValues)
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -73,7 +80,8 @@ export function AddTaskModal({
 
   const handleOpenChange = (next: boolean) => {
     setOpen(next)
-    if (!next) reset()
+    // Mở lại luôn dùng default hiện tại (defaultDueDate có thể đổi giữa các lần mở).
+    reset()
   }
 
   return (

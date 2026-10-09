@@ -14,6 +14,7 @@ import {
 import { onAuthStateChanged } from "firebase/auth"
 
 import { auth, db } from "@/lib/firebase/client"
+import { isTaskOverdue } from "./task-dates"
 import { taskMockData } from "./task-mock-data"
 import { taskSchema, type Task, type TaskInput } from "./types/task-types"
 
@@ -172,5 +173,6 @@ export function getTaskStats(tasks: Task[]) {
     done: tasks.filter((task) => task.status === "done").length,
     inProgress: tasks.filter((task) => task.status === "in_progress").length,
     todo: tasks.filter((task) => task.status === "todo").length,
+    overdue: tasks.filter((task) => isTaskOverdue(task)).length,
   }
 }

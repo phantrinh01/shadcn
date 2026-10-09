@@ -2,30 +2,31 @@
 
 import type { ColumnDef } from "@tanstack/react-table"
 
-import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
-import { cn } from "@/lib/utils"
 
-import {
-  categories,
-  priorities,
-  statuses,
-} from "@/modules/tasks/services/task-mock-data"
-import type { Task } from "@/modules/tasks/services/types/task-types"
+import type {
+  Task,
+  TaskAssignee,
+} from "@/modules/tasks/services/types/task-types"
 import { DataTableColumnHeader } from "./data-table-column-header"
 import { DataTableRowActions } from "./data-table-row-actions"
+import { DueDate, PriorityBadge, StatusLabel, TagBadges } from "./task-badges"
 
 interface TaskColumnActions {
   onUpdateTask?: (task: Task) => void | Promise<void>
   onDeleteTask?: (taskId: string) => void | Promise<void>
   onDuplicateTask?: (task: Task) => void | Promise<void>
+  assignees?: TaskAssignee[]
 }
 
 export function getTaskColumns({
   onUpdateTask,
   onDeleteTask,
   onDuplicateTask,
+  assignees = [],
 }: TaskColumnActions = {}): ColumnDef<Task>[] {
+  const assigneeNames = new Map(assignees.map((m) => [m.uid, m.name]))
+
   return [
     {
       id: "select",
@@ -52,16 +53,6 @@ export function getTaskColumns({
       enableHiding: false,
     },
     {
-      accessorKey: "id",
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Task" />
-      ),
-      cell: ({ row }) => (
-        <div className="w-[90px] font-medium">{row.getValue("id")}</div>
-      ),
-      enableHiding: false,
-    },
-    {
       accessorKey: "title",
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Title" />
@@ -77,52 +68,13 @@ export function getTaskColumns({
       },
     },
     {
-      accessorKey: "category",
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Category" />
-      ),
-      cell: ({ row }) => {
-        const category = categories.find(
-          (cat) => cat.value === row.getValue("category")
-        )
-
-        if (!category) {
-          return null
-        }
-
-        return (
-          <div className="flex w-[120px] items-center">
-            <Badge variant="outline">{category.label}</Badge>
-          </div>
-        )
-      },
-      filterFn: (row, id, value) => {
-        return value.includes(row.getValue(id))
-      },
-    },
-    {
       accessorKey: "status",
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Status" />
       ),
-      cell: ({ row }) => {
-        const status = statuses.find(
-          (status) => status.value === row.getValue("status")
-        )
-
-        if (!status) {
-          return null
-        }
-
-        return (
-          <div className="flex w-[130px] items-center">
-            {status.icon && (
-              <status.icon className="mr-2 h-4 w-4 text-muted-foreground" />
-            )}
-            <span className="text-sm">{status.label}</span>
-          </div>
-        )
-      },
+      cell: ({ row }) => (
+        <StatusLabel status={row.original.status} className="w-[130px]" />
+      ),
       filterFn: (row, id, value) => {
         return value.includes(row.getValue(id))
       },
@@ -132,39 +84,48 @@ export function getTaskColumns({
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Priority" />
       ),
-      cell: ({ row }) => {
-        const priority = priorities.find(
-          (priority) => priority.value === row.getValue("priority")
-        )
-
-        if (!priority) {
-          return null
-        }
-
-        const priorityColors = {
-          critical: "border-red-700 text-red-700 dark:text-red-400",
-          important: "border-orange-500 text-orange-700 dark:text-orange-400",
-          normal: "border-blue-500 text-blue-700 dark:text-blue-400",
-          minor: "border-gray-500 text-gray-700 dark:text-gray-400",
-        }
-
-        return (
-          <div className="flex items-center">
-            <Badge
-              variant="outline"
-              className={cn(
-                "pl-2",
-                priorityColors[priority.value as keyof typeof priorityColors]
-              )}
-            >
-              <span className="text-sm">{priority.label}</span>
-            </Badge>
-          </div>
-        )
-      },
+      cell: ({ row }) => (
+        <div className="flex items-center">
+          <PriorityBadge priority={row.original.priority} />
+        </div>
+      ),
       filterFn: (row, id, value) => {
         return value.includes(row.getValue(id))
       },
+    },
+    {
+      id: "assignee",
+      accessorFn: (task) =>
+        task.assignee
+          ? (assigneeNames.get(task.assignee) ?? task.assignee)
+          : "",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Assignee" />
+      ),
+      cell: ({ row }) => {
+        const name = row.getValue<string>("assignee")
+
+        return name ? (
+          <span className="block max-w-[160px] truncate text-sm">{name}</span>
+        ) : (
+          <span className="text-sm text-muted-foreground">Unassigned</span>
+        )
+      },
+    },
+    {
+      accessorKey: "due_date",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Due date" />
+      ),
+      cell: ({ row }) => <DueDate task={row.original} />,
+    },
+    {
+      accessorKey: "tags",
+      header: "Tags",
+      cell: ({ row }) => (
+        <TagBadges tags={row.original.tags} className="max-w-[200px]" />
+      ),
+      enableSorting: false,
     },
     {
       id: "actions",
@@ -174,6 +135,7 @@ export function getTaskColumns({
           onUpdateTask={onUpdateTask}
           onDeleteTask={onDeleteTask}
           onDuplicateTask={onDuplicateTask}
+          assignees={assignees}
         />
       ),
     },

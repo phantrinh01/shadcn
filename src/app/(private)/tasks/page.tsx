@@ -1,7 +1,15 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState } from "react"
-import { ArrowUp, BarChart3, CheckCircle2, Clock, ListTodo } from "lucide-react"
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import {
+  AlertTriangle,
+  ArrowUp,
+  BarChart3,
+  CheckCircle2,
+  Clock,
+  ListTodo,
+} from "lucide-react"
 
 import {
   Card,
@@ -10,8 +18,26 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { getUsers } from "@/modules/users/services/user-services"
 import { getTaskColumns } from "@/modules/tasks/components/columns"
+import { BoardView } from "@/modules/tasks/components/board-view"
+import { CalendarView } from "@/modules/tasks/components/calendar-view"
 import { DataTable } from "@/modules/tasks/components/data-table"
+import { GridView } from "@/modules/tasks/components/grid-view"
+import { isTaskOverdue } from "@/modules/tasks/components/task-badges"
+import {
+  defaultTaskFilters,
+  filterTasks,
+  type TaskFilters,
+} from "@/modules/tasks/components/task-filters"
+import { TaskToolbar } from "@/modules/tasks/components/task-toolbar"
+import { TaskViewSkeleton } from "@/modules/tasks/components/task-view-states"
+import {
+  parseTaskView,
+  ViewSwitcher,
+  type TaskView,
+} from "@/modules/tasks/components/view-switcher"
+import { cn } from "@/lib/utils"
 import {
   createTask,
   deleteTask,
@@ -20,10 +46,30 @@ import {
   seedTasksWithClient,
   updateTask,
 } from "@/modules/tasks/services/task-services"
-import type { Task } from "@/modules/tasks/services/types/task-types"
+import {
+  TASK_TITLE_MAX_LENGTH,
+  type Task,
+  type TaskAssignee,
+  type TaskInput,
+} from "@/modules/tasks/services/types/task-types"
 
 export default function TaskPage() {
+  // useSearchParams cần Suspense boundary khi build.
+  return (
+    <Suspense fallback={null}>
+      <TaskPageContent />
+    </Suspense>
+  )
+}
+
+function TaskPageContent() {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const view = parseTaskView(searchParams.get("view"))
+  const [filters, setFilters] = useState<TaskFilters>(defaultTaskFilters)
   const [tasks, setTasks] = useState<Task[]>([])
+  const [assignees, setAssignees] = useState<TaskAssignee[]>([])
   const [loading, setLoading] = useState(true)
   const [isSeedingTasks, setIsSeedingTasks] = useState(false)
 
@@ -33,9 +79,19 @@ export default function TaskPage() {
   }, [])
 
   useEffect(() => {
-    const loadTasks = async () => {
+    const loadData = async () => {
       try {
-        await refreshTasks()
+        const [, users] = await Promise.all([
+          refreshTasks(),
+          getUsers().catch(() => []),
+        ])
+        setAssignees(
+          users.map((user) => ({
+            uid: user.uid,
+            name: user.name || user.email,
+            photoURL: user.photoURL,
+          }))
+        )
       } catch (error) {
         console.error("Failed to load tasks:", error)
       } finally {
@@ -43,16 +99,13 @@ export default function TaskPage() {
       }
     }
 
-    loadTasks()
+    loadData()
   }, [refreshTasks])
 
-  const handleAddTask = useCallback(
-    async (newTask: Task) => {
-      await createTask(newTask)
-      await refreshTasks()
-    },
-    [refreshTasks]
-  )
+  const handleAddTask = useCallback(async (input: TaskInput) => {
+    const created = await createTask(input)
+    setTasks((prev) => [created, ...prev])
+  }, [])
 
   const handleUpdateTask = useCallback(async (task: Task) => {
     await updateTask(task)
@@ -65,27 +118,32 @@ export default function TaskPage() {
   }, [])
 
   const handleDuplicateTask = useCallback(async (task: Task) => {
-    const duplicate: Task = {
-      ...task,
-      id: `TASK-${Date.now()}`,
-      title: `${task.title} (Copy)`,
-    }
-
-    await createTask(duplicate)
+    const {
+      id: _id,
+      created_at: _createdAt,
+      updated_at: _updatedAt,
+      ...input
+    } = task
+    const duplicate = await createTask({
+      ...input,
+      title: `${task.title} (Copy)`.slice(0, TASK_TITLE_MAX_LENGTH),
+    })
     setTasks((prev) => [duplicate, ...prev])
   }, [])
 
   const handleSeedTasks = useCallback(async () => {
     try {
       setIsSeedingTasks(true)
-      const seededTasks = await seedTasksWithClient()
+      const seededTasks = await seedTasksWithClient(
+        assignees.map((member) => member.uid)
+      )
       setTasks(seededTasks)
     } catch (error) {
       console.error("Failed to seed tasks:", error)
     } finally {
       setIsSeedingTasks(false)
     }
-  }, [])
+  }, [assignees])
 
   const taskColumns = useMemo(
     () =>
@@ -93,21 +151,35 @@ export default function TaskPage() {
         onUpdateTask: handleUpdateTask,
         onDeleteTask: handleDeleteTask,
         onDuplicateTask: handleDuplicateTask,
+        assignees,
       }),
-    [handleDeleteTask, handleDuplicateTask, handleUpdateTask]
+    [assignees, handleDeleteTask, handleDuplicateTask, handleUpdateTask]
   )
+
+  const handleViewChange = useCallback(
+    (next: TaskView) => {
+      const params = new URLSearchParams(searchParams.toString())
+      if (next === "table") params.delete("view")
+      else params.set("view", next)
+      const query = params.toString()
+      router.replace(query ? `${pathname}?${query}` : pathname, {
+        scroll: false,
+      })
+    },
+    [pathname, router, searchParams]
+  )
+
+  const filteredTasks = useMemo(
+    () => filterTasks(tasks, filters),
+    [tasks, filters]
+  )
+
+  // Grid và Board dùng được trên mobile; Table và Calendar cần màn hình lớn.
+  const mobileFriendly = view === "grid" || view === "board"
 
   const stats = getTaskStats(tasks)
   const getPercent = (value: number) =>
     stats.total > 0 ? Math.round((value / stats.total) * 100) : 0
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-muted-foreground">Loading tasks...</div>
-      </div>
-    )
-  }
 
   return (
     <>
@@ -120,21 +192,30 @@ export default function TaskPage() {
       </div>
 
       {/* Mobile view placeholder - shows message instead of images */}
-      <div className="md:hidden px-4 md:px-6">
-        <div className="flex items-center justify-center h-96 border rounded-lg bg-muted/20">
-          <div className="text-center p-8">
-            <h3 className="text-lg font-semibold mb-2">Tasks Dashboard</h3>
-            <p className="text-muted-foreground">
-              Please use a larger screen to view the full tasks interface.
-            </p>
+      {!mobileFriendly ? (
+        <div className="md:hidden px-4 md:px-6">
+          <div className="flex flex-col items-center justify-center gap-4 h-96 border rounded-lg bg-muted/20">
+            <div className="text-center p-8">
+              <h3 className="text-lg font-semibold mb-2">Tasks Dashboard</h3>
+              <p className="text-muted-foreground">
+                Please use a larger screen to view this view, or switch to Grid
+                or Board.
+              </p>
+            </div>
+            <ViewSwitcher value={view} onChange={handleViewChange} />
           </div>
         </div>
-      </div>
+      ) : null}
 
       {/* Desktop view */}
-      <div className="hidden h-full flex-1 flex-col space-y-6 px-4 md:px-6 md:flex">
+      <div
+        className={cn(
+          "h-full flex-1 flex-col space-y-6 px-4 md:flex md:px-6",
+          mobileFriendly ? "flex" : "hidden"
+        )}
+      >
         {/* Stats Cards */}
-        <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+        <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
           <Card>
             <CardContent>
               <div className="flex items-center justify-between">
@@ -146,7 +227,7 @@ export default function TaskPage() {
                     <span className="text-2xl font-bold">{stats.total}</span>
                     <span className="flex items-center gap-0.5 text-sm text-green-500">
                       <ArrowUp className="size-3.5" />
-                      {getPercent(stats.completed)}%
+                      {getPercent(stats.done)}%
                     </span>
                   </div>
                 </div>
@@ -162,15 +243,13 @@ export default function TaskPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-muted-foreground text-sm font-medium">
-                    Completed
+                    Done
                   </p>
                   <div className="mt-1 flex items-baseline gap-2">
-                    <span className="text-2xl font-bold">
-                      {stats.completed}
-                    </span>
+                    <span className="text-2xl font-bold">{stats.done}</span>
                     <span className="flex items-center gap-0.5 text-sm text-green-500">
                       <ArrowUp className="size-3.5" />
-                      {getPercent(stats.completed)}%
+                      {getPercent(stats.done)}%
                     </span>
                   </div>
                 </div>
@@ -210,18 +289,53 @@ export default function TaskPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-muted-foreground text-sm font-medium">
-                    Pending
+                    To Do
                   </p>
                   <div className="mt-1 flex items-baseline gap-2">
-                    <span className="text-2xl font-bold">{stats.pending}</span>
+                    <span className="text-2xl font-bold">{stats.todo}</span>
                     <span className="flex items-center gap-0.5 text-sm text-orange-500">
                       <ArrowUp className="size-3.5" />
-                      {getPercent(stats.pending)}%
+                      {getPercent(stats.todo)}%
                     </span>
                   </div>
                 </div>
                 <div className="bg-secondary rounded-lg p-3">
                   <BarChart3 className="size-6" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card
+            className={cn(
+              stats.overdue > 0 && "border-red-500/70 bg-red-50/40 dark:bg-red-950/20"
+            )}
+          >
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-muted-foreground text-sm font-medium">
+                    Quá hạn
+                  </p>
+                  <div className="mt-1 flex items-baseline gap-2">
+                    <span
+                      className={cn(
+                        "text-2xl font-bold",
+                        stats.overdue > 0 && "text-red-600 dark:text-red-400"
+                      )}
+                    >
+                      {stats.overdue}
+                    </span>
+                  </div>
+                </div>
+                <div
+                  className={cn(
+                    "bg-secondary rounded-lg p-3",
+                    stats.overdue > 0 &&
+                      "bg-red-100 text-red-600 dark:bg-red-950 dark:text-red-400"
+                  )}
+                >
+                  <AlertTriangle className="size-6" />
                 </div>
               </div>
             </CardContent>
@@ -237,13 +351,55 @@ export default function TaskPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <DataTable
-              data={tasks}
-              columns={taskColumns}
-              onAddTask={handleAddTask}
-              onSeedTasks={handleSeedTasks}
-              isSeedingTasks={isSeedingTasks}
-            />
+            <div className="space-y-4">
+              <TaskToolbar
+                filters={filters}
+                onFiltersChange={setFilters}
+                view={view}
+                onViewChange={handleViewChange}
+                onAddTask={handleAddTask}
+                assignees={assignees}
+                onSeedTasks={handleSeedTasks}
+                isSeedingTasks={isSeedingTasks}
+              />
+              {loading ? (
+                <TaskViewSkeleton />
+              ) : view === "table" ? (
+                <DataTable
+                  data={filteredTasks}
+                  columns={taskColumns}
+                  getRowClassName={(task) =>
+                    isTaskOverdue(task)
+                      ? "bg-red-50/50 dark:bg-red-950/20 [&>td:first-child]:border-l-2 [&>td:first-child]:border-l-red-500"
+                      : undefined
+                  }
+                />
+              ) : view === "board" ? (
+                <BoardView
+                  tasks={filteredTasks}
+                  assignees={assignees}
+                  onAddTask={handleAddTask}
+                  onUpdateTask={handleUpdateTask}
+                  onDeleteTask={handleDeleteTask}
+                  onDuplicateTask={handleDuplicateTask}
+                />
+              ) : view === "grid" ? (
+                <GridView
+                  tasks={filteredTasks}
+                  assignees={assignees}
+                  onUpdateTask={handleUpdateTask}
+                  onDeleteTask={handleDeleteTask}
+                  onDuplicateTask={handleDuplicateTask}
+                />
+              ) : (
+                <CalendarView
+                  tasks={filteredTasks}
+                  assignees={assignees}
+                  onAddTask={handleAddTask}
+                  onUpdateTask={handleUpdateTask}
+                />
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>

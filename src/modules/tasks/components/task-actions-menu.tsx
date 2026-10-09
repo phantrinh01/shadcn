@@ -2,7 +2,18 @@
 
 import * as React from "react"
 import { MoreHorizontal } from "lucide-react"
+import { toast } from "sonner"
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -38,6 +49,22 @@ export function TaskActionsMenu({
   assignees = [],
 }: TaskActionsMenuProps) {
   const [editOpen, setEditOpen] = React.useState(false)
+  const [deleteOpen, setDeleteOpen] = React.useState(false)
+  const [isDeleting, setIsDeleting] = React.useState(false)
+
+  async function handleConfirmDelete() {
+    try {
+      setIsDeleting(true)
+      await onDeleteTask?.(task.id)
+      setDeleteOpen(false)
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to delete task"
+      )
+    } finally {
+      setIsDeleting(false)
+    }
+  }
 
   return (
     <>
@@ -68,7 +95,7 @@ export function TaskActionsMenu({
           <DropdownMenuItem
             className="cursor-pointer"
             variant="destructive"
-            onClick={() => onDeleteTask?.(task.id)}
+            onClick={() => setDeleteOpen(true)}
           >
             Delete
             <DropdownMenuShortcut className="text-destructive">
@@ -77,6 +104,32 @@ export function TaskActionsMenu({
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this task?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Task &quot;{task.title}&quot; will be permanently deleted. This
+              action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              disabled={isDeleting}
+              onClick={(event) => {
+                // Keep the dialog open until deletion finishes.
+                event.preventDefault()
+                void handleConfirmDelete()
+              }}
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <TaskEditDialog
         task={task}

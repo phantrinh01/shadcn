@@ -26,7 +26,8 @@ function formatSize(bytes: number): string {
 /** Thông báo lỗi kèm mã Firebase (vd. storage/unauthorized) để dễ chẩn đoán. */
 export function describeUploadError(name: string, error: unknown): string {
   const code = (error as { code?: string } | null)?.code
-  return `Không thể tải lên "${name}"${code ? ` (${code})` : ""}. Vui lòng thử lại.`
+  const detail = code ?? (error instanceof Error ? error.message : "")
+  return `Không thể tải lên "${name}"${detail ? ` (${detail})` : ""}. Vui lòng thử lại.`
 }
 
 /** Lọc file hợp lệ; file không hợp lệ báo lỗi bằng toast. */

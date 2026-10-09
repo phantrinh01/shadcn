@@ -15,6 +15,7 @@ import {
 import type {
   TaskAssignee,
   TaskInput,
+  TaskStatus,
 } from "@/modules/tasks/services/types/task-types"
 import {
   emptyTaskForm,
@@ -27,20 +28,23 @@ interface AddTaskModalProps {
   onAddTask?: (task: TaskInput) => void | Promise<void>
   assignees?: TaskAssignee[]
   trigger?: React.ReactNode
+  defaultStatus?: TaskStatus
 }
 
 export function AddTaskModal({
   onAddTask,
   assignees = [],
   trigger,
+  defaultStatus = "todo",
 }: AddTaskModalProps) {
+  const initialValues: TaskFormValues = { ...emptyTaskForm, status: defaultStatus }
   const [open, setOpen] = useState(false)
-  const [values, setValues] = useState<TaskFormValues>(emptyTaskForm)
+  const [values, setValues] = useState<TaskFormValues>(initialValues)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const reset = () => {
-    setValues(emptyTaskForm)
+    setValues(initialValues)
     setErrors({})
   }
 

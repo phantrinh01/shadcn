@@ -1,6 +1,7 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { ArrowUp, BarChart3, CheckCircle2, Clock, ListTodo } from "lucide-react"
 
 import {
@@ -12,7 +13,23 @@ import {
 } from "@/components/ui/card"
 import { getUsers } from "@/modules/users/services/user-services"
 import { getTaskColumns } from "@/modules/tasks/components/columns"
+import { BoardView } from "@/modules/tasks/components/board-view"
+import { CalendarView } from "@/modules/tasks/components/calendar-view"
 import { DataTable } from "@/modules/tasks/components/data-table"
+import { GridView } from "@/modules/tasks/components/grid-view"
+import {
+  defaultTaskFilters,
+  filterTasks,
+  type TaskFilters,
+} from "@/modules/tasks/components/task-filters"
+import { TaskToolbar } from "@/modules/tasks/components/task-toolbar"
+import { TaskViewSkeleton } from "@/modules/tasks/components/task-view-states"
+import {
+  parseTaskView,
+  ViewSwitcher,
+  type TaskView,
+} from "@/modules/tasks/components/view-switcher"
+import { cn } from "@/lib/utils"
 import {
   createTask,
   deleteTask,
@@ -29,6 +46,20 @@ import {
 } from "@/modules/tasks/services/types/task-types"
 
 export default function TaskPage() {
+  // useSearchParams cần Suspense boundary khi build.
+  return (
+    <Suspense fallback={null}>
+      <TaskPageContent />
+    </Suspense>
+  )
+}
+
+function TaskPageContent() {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const view = parseTaskView(searchParams.get("view"))
+  const [filters, setFilters] = useState<TaskFilters>(defaultTaskFilters)
   const [tasks, setTasks] = useState<Task[]>([])
   const [assignees, setAssignees] = useState<TaskAssignee[]>([])
   const [loading, setLoading] = useState(true)
@@ -117,17 +148,30 @@ export default function TaskPage() {
     [assignees, handleDeleteTask, handleDuplicateTask, handleUpdateTask]
   )
 
+  const handleViewChange = useCallback(
+    (next: TaskView) => {
+      const params = new URLSearchParams(searchParams.toString())
+      if (next === "table") params.delete("view")
+      else params.set("view", next)
+      const query = params.toString()
+      router.replace(query ? `${pathname}?${query}` : pathname, {
+        scroll: false,
+      })
+    },
+    [pathname, router, searchParams]
+  )
+
+  const filteredTasks = useMemo(
+    () => filterTasks(tasks, filters),
+    [tasks, filters]
+  )
+
+  // Grid và Board dùng được trên mobile; Table và Calendar cần màn hình lớn.
+  const mobileFriendly = view === "grid" || view === "board"
+
   const stats = getTaskStats(tasks)
   const getPercent = (value: number) =>
     stats.total > 0 ? Math.round((value / stats.total) * 100) : 0
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-muted-foreground">Loading tasks...</div>
-      </div>
-    )
-  }
 
   return (
     <>
@@ -140,19 +184,28 @@ export default function TaskPage() {
       </div>
 
       {/* Mobile view placeholder - shows message instead of images */}
-      <div className="md:hidden px-4 md:px-6">
-        <div className="flex items-center justify-center h-96 border rounded-lg bg-muted/20">
-          <div className="text-center p-8">
-            <h3 className="text-lg font-semibold mb-2">Tasks Dashboard</h3>
-            <p className="text-muted-foreground">
-              Please use a larger screen to view the full tasks interface.
-            </p>
+      {!mobileFriendly ? (
+        <div className="md:hidden px-4 md:px-6">
+          <div className="flex flex-col items-center justify-center gap-4 h-96 border rounded-lg bg-muted/20">
+            <div className="text-center p-8">
+              <h3 className="text-lg font-semibold mb-2">Tasks Dashboard</h3>
+              <p className="text-muted-foreground">
+                Please use a larger screen to view this view, or switch to Grid
+                or Board.
+              </p>
+            </div>
+            <ViewSwitcher value={view} onChange={handleViewChange} />
           </div>
         </div>
-      </div>
+      ) : null}
 
       {/* Desktop view */}
-      <div className="hidden h-full flex-1 flex-col space-y-6 px-4 md:px-6 md:flex">
+      <div
+        className={cn(
+          "h-full flex-1 flex-col space-y-6 px-4 md:flex md:px-6",
+          mobileFriendly ? "flex" : "hidden"
+        )}
+      >
         {/* Stats Cards */}
         <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
           <Card>
@@ -255,14 +308,46 @@ export default function TaskPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <DataTable
-              data={tasks}
-              columns={taskColumns}
-              onAddTask={handleAddTask}
-              assignees={assignees}
-              onSeedTasks={handleSeedTasks}
-              isSeedingTasks={isSeedingTasks}
-            />
+            <div className="space-y-4">
+              <TaskToolbar
+                filters={filters}
+                onFiltersChange={setFilters}
+                view={view}
+                onViewChange={handleViewChange}
+                onAddTask={handleAddTask}
+                assignees={assignees}
+                onSeedTasks={handleSeedTasks}
+                isSeedingTasks={isSeedingTasks}
+              />
+              {loading ? (
+                <TaskViewSkeleton />
+              ) : view === "table" ? (
+                <DataTable data={filteredTasks} columns={taskColumns} />
+              ) : view === "board" ? (
+                <BoardView
+                  tasks={filteredTasks}
+                  assignees={assignees}
+                  onAddTask={handleAddTask}
+                  onUpdateTask={handleUpdateTask}
+                  onDeleteTask={handleDeleteTask}
+                  onDuplicateTask={handleDuplicateTask}
+                />
+              ) : view === "grid" ? (
+                <GridView
+                  tasks={filteredTasks}
+                  assignees={assignees}
+                  onUpdateTask={handleUpdateTask}
+                  onDeleteTask={handleDeleteTask}
+                  onDuplicateTask={handleDuplicateTask}
+                />
+              ) : (
+                <CalendarView
+                  tasks={filteredTasks}
+                  assignees={assignees}
+                  onUpdateTask={handleUpdateTask}
+                />
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>

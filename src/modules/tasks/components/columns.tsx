@@ -1,19 +1,16 @@
 "use client"
 
 import type { ColumnDef } from "@tanstack/react-table"
-import { format, isPast } from "date-fns"
 
-import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
-import { cn } from "@/lib/utils"
 
-import { priorities, statuses } from "@/modules/tasks/services/task-options"
 import type {
   Task,
   TaskAssignee,
 } from "@/modules/tasks/services/types/task-types"
 import { DataTableColumnHeader } from "./data-table-column-header"
 import { DataTableRowActions } from "./data-table-row-actions"
+import { DueDate, PriorityBadge, StatusLabel, TagBadges } from "./task-badges"
 
 interface TaskColumnActions {
   onUpdateTask?: (task: Task) => void | Promise<void>
@@ -75,24 +72,9 @@ export function getTaskColumns({
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Status" />
       ),
-      cell: ({ row }) => {
-        const status = statuses.find(
-          (status) => status.value === row.getValue("status")
-        )
-
-        if (!status) {
-          return null
-        }
-
-        return (
-          <div className="flex w-[130px] items-center">
-            {status.icon && (
-              <status.icon className="mr-2 h-4 w-4 text-muted-foreground" />
-            )}
-            <span className="text-sm">{status.label}</span>
-          </div>
-        )
-      },
+      cell: ({ row }) => (
+        <StatusLabel status={row.original.status} className="w-[130px]" />
+      ),
       filterFn: (row, id, value) => {
         return value.includes(row.getValue(id))
       },
@@ -102,32 +84,11 @@ export function getTaskColumns({
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Priority" />
       ),
-      cell: ({ row }) => {
-        const priority = priorities.find(
-          (priority) => priority.value === row.getValue("priority")
-        )
-
-        if (!priority) {
-          return null
-        }
-
-        const priorityColors: Record<string, string> = {
-          high: "border-red-700 text-red-700 dark:text-red-400",
-          medium: "border-orange-500 text-orange-700 dark:text-orange-400",
-          low: "border-gray-500 text-gray-700 dark:text-gray-400",
-        }
-
-        return (
-          <div className="flex items-center">
-            <Badge
-              variant="outline"
-              className={cn("pl-2", priorityColors[priority.value])}
-            >
-              <span className="text-sm">{priority.label}</span>
-            </Badge>
-          </div>
-        )
-      },
+      cell: ({ row }) => (
+        <div className="flex items-center">
+          <PriorityBadge priority={row.original.priority} />
+        </div>
+      ),
       filterFn: (row, id, value) => {
         return value.includes(row.getValue(id))
       },
@@ -156,48 +117,14 @@ export function getTaskColumns({
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Due date" />
       ),
-      cell: ({ row }) => {
-        const dueDate = row.original.due_date
-
-        if (!dueDate) {
-          return <span className="text-sm text-muted-foreground">—</span>
-        }
-
-        const date = new Date(dueDate)
-        const overdue = row.original.status !== "done" && isPast(date)
-
-        return (
-          <span
-            className={cn(
-              "whitespace-nowrap text-sm",
-              overdue && "font-medium text-red-600 dark:text-red-400"
-            )}
-          >
-            {format(date, "dd/MM/yyyy")}
-          </span>
-        )
-      },
+      cell: ({ row }) => <DueDate task={row.original} />,
     },
     {
       accessorKey: "tags",
       header: "Tags",
-      cell: ({ row }) => {
-        const tags = row.original.tags ?? []
-        if (!tags.length) return null
-
-        return (
-          <div className="flex max-w-[200px] flex-wrap gap-1">
-            {tags.slice(0, 3).map((tag) => (
-              <Badge key={tag} variant="secondary">
-                {tag}
-              </Badge>
-            ))}
-            {tags.length > 3 && (
-              <Badge variant="outline">+{tags.length - 3}</Badge>
-            )}
-          </div>
-        )
-      },
+      cell: ({ row }) => (
+        <TagBadges tags={row.original.tags} className="max-w-[200px]" />
+      ),
       enableSorting: false,
     },
     {

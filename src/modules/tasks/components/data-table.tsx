@@ -3,14 +3,10 @@
 import * as React from "react"
 import {
   type ColumnDef,
-  type ColumnFiltersState,
   type SortingState,
   type VisibilityState,
   flexRender,
   getCoreRowModel,
-  getFacetedRowModel,
-  getFacetedUniqueValues,
-  getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
@@ -27,34 +23,19 @@ import {
 
 import { DataTablePagination } from "./data-table-pagination"
 import { DataTableToolbar } from "./data-table-toolbar"
-import type {
-  TaskAssignee,
-  TaskInput,
-} from "@/modules/tasks/services/types/task-types"
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
-  onAddTask?: (task: TaskInput) => void | Promise<void>
-  assignees?: TaskAssignee[]
-  onSeedTasks?: () => void | Promise<void>
-  isSeedingTasks?: boolean
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
-  onAddTask,
-  assignees,
-  onSeedTasks,
-  isSeedingTasks,
 }: DataTableProps<TData, TValue>) {
   const [rowSelection, setRowSelection] = React.useState({})
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({})
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    []
-  )
   const [sorting, setSorting] = React.useState<SortingState>([])
 
   const table = useReactTable({
@@ -64,30 +45,19 @@ export function DataTable<TData, TValue>({
       sorting,
       columnVisibility,
       rowSelection,
-      columnFilters,
     },
     enableRowSelection: true,
     onRowSelectionChange: setRowSelection,
     onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
     getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    getFacetedRowModel: getFacetedRowModel(),
-    getFacetedUniqueValues: getFacetedUniqueValues(),
   })
 
   return (
     <div className="space-y-4">
-      <DataTableToolbar
-        table={table}
-        onAddTask={onAddTask}
-        assignees={assignees}
-        onSeedTasks={onSeedTasks}
-        isSeedingTasks={isSeedingTasks}
-      />
+      <DataTableToolbar table={table} />
       <div className="rounded-md border">
         <Table>
           <TableHeader>

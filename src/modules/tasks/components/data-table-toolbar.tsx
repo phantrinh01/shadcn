@@ -15,16 +15,16 @@ import {
 import { DataTableViewOptions } from "./data-table-view-options"
 import { AddTaskModal } from "./add-task-modal"
 
-import {
-  categories,
-  priorities,
-  statuses,
-} from "@/modules/tasks/services/task-mock-data"
-import type { Task } from "@/modules/tasks/services/types/task-types"
+import { priorities, statuses } from "@/modules/tasks/services/task-options"
+import type {
+  TaskAssignee,
+  TaskInput,
+} from "@/modules/tasks/services/types/task-types"
 
 interface DataTableToolbarProps<TData> {
   table: Table<TData>
-  onAddTask?: (task: Task) => void | Promise<void>
+  onAddTask?: (task: TaskInput) => void | Promise<void>
+  assignees?: TaskAssignee[]
   onSeedTasks?: () => void | Promise<void>
   isSeedingTasks?: boolean
 }
@@ -32,6 +32,7 @@ interface DataTableToolbarProps<TData> {
 export function DataTableToolbar<TData>({
   table,
   onAddTask,
+  assignees,
   onSeedTasks,
   isSeedingTasks,
 }: DataTableToolbarProps<TData>) {
@@ -39,15 +40,6 @@ export function DataTableToolbar<TData>({
 
   const handleStatusChange = (value: string) => {
     const column = table.getColumn("status")
-    if (value === "all") {
-      column?.setFilterValue(undefined)
-    } else {
-      column?.setFilterValue(value)
-    }
-  }
-
-  const handleCategoryChange = (value: string) => {
-    const column = table.getColumn("category")
     if (value === "all") {
       column?.setFilterValue(undefined)
     } else {
@@ -65,20 +57,15 @@ export function DataTableToolbar<TData>({
   }
 
   const statusFilter = table.getColumn("status")?.getFilterValue() as
-    | string
-    | undefined
-  const categoryFilter = table.getColumn("category")?.getFilterValue() as
-    | string
-    | undefined
+    string | undefined
   const priorityFilter = table.getColumn("priority")?.getFilterValue() as
-    | string
-    | undefined
+    string | undefined
 
   return (
     <div className="space-y-4">
       {/* Filter Section */}
       <div className="space-y-3">
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           {/* Status Filter */}
           <Select
             value={statusFilter || "all"}
@@ -103,30 +90,6 @@ export function DataTableToolbar<TData>({
                     )}
                     {status.label}
                   </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {/* Category Filter */}
-          <Select
-            value={categoryFilter || "all"}
-            onValueChange={handleCategoryChange}
-          >
-            <SelectTrigger className="w-full cursor-pointer">
-              <SelectValue placeholder="Category" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all" className="cursor-pointer">
-                All Categories
-              </SelectItem>
-              {categories.map((category) => (
-                <SelectItem
-                  key={category.value}
-                  value={category.value}
-                  className="cursor-pointer"
-                >
-                  {category.label}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -198,7 +161,7 @@ export function DataTableToolbar<TData>({
             </span>
           </Button>
           <DataTableViewOptions table={table} />
-          <AddTaskModal onAddTask={onAddTask} />
+          <AddTaskModal onAddTask={onAddTask} assignees={assignees} />
         </div>
       </div>
     </div>

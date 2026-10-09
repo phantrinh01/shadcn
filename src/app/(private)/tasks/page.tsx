@@ -10,6 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { getUsers } from "@/modules/users/services/user-services"
 import { getTaskColumns } from "@/modules/tasks/components/columns"
 import { DataTable } from "@/modules/tasks/components/data-table"
 import {
@@ -20,10 +21,16 @@ import {
   seedTasksWithClient,
   updateTask,
 } from "@/modules/tasks/services/task-services"
-import type { Task } from "@/modules/tasks/services/types/task-types"
+import {
+  TASK_TITLE_MAX_LENGTH,
+  type Task,
+  type TaskAssignee,
+  type TaskInput,
+} from "@/modules/tasks/services/types/task-types"
 
 export default function TaskPage() {
   const [tasks, setTasks] = useState<Task[]>([])
+  const [assignees, setAssignees] = useState<TaskAssignee[]>([])
   const [loading, setLoading] = useState(true)
   const [isSeedingTasks, setIsSeedingTasks] = useState(false)
 
@@ -33,9 +40,19 @@ export default function TaskPage() {
   }, [])
 
   useEffect(() => {
-    const loadTasks = async () => {
+    const loadData = async () => {
       try {
-        await refreshTasks()
+        const [, users] = await Promise.all([
+          refreshTasks(),
+          getUsers().catch(() => []),
+        ])
+        setAssignees(
+          users.map((user) => ({
+            uid: user.uid,
+            name: user.name || user.email,
+            photoURL: user.photoURL,
+          }))
+        )
       } catch (error) {
         console.error("Failed to load tasks:", error)
       } finally {
@@ -43,16 +60,13 @@ export default function TaskPage() {
       }
     }
 
-    loadTasks()
+    loadData()
   }, [refreshTasks])
 
-  const handleAddTask = useCallback(
-    async (newTask: Task) => {
-      await createTask(newTask)
-      await refreshTasks()
-    },
-    [refreshTasks]
-  )
+  const handleAddTask = useCallback(async (input: TaskInput) => {
+    const created = await createTask(input)
+    setTasks((prev) => [created, ...prev])
+  }, [])
 
   const handleUpdateTask = useCallback(async (task: Task) => {
     await updateTask(task)
@@ -65,27 +79,32 @@ export default function TaskPage() {
   }, [])
 
   const handleDuplicateTask = useCallback(async (task: Task) => {
-    const duplicate: Task = {
-      ...task,
-      id: `TASK-${Date.now()}`,
-      title: `${task.title} (Copy)`,
-    }
-
-    await createTask(duplicate)
+    const {
+      id: _id,
+      created_at: _createdAt,
+      updated_at: _updatedAt,
+      ...input
+    } = task
+    const duplicate = await createTask({
+      ...input,
+      title: `${task.title} (Copy)`.slice(0, TASK_TITLE_MAX_LENGTH),
+    })
     setTasks((prev) => [duplicate, ...prev])
   }, [])
 
   const handleSeedTasks = useCallback(async () => {
     try {
       setIsSeedingTasks(true)
-      const seededTasks = await seedTasksWithClient()
+      const seededTasks = await seedTasksWithClient(
+        assignees.map((member) => member.uid)
+      )
       setTasks(seededTasks)
     } catch (error) {
       console.error("Failed to seed tasks:", error)
     } finally {
       setIsSeedingTasks(false)
     }
-  }, [])
+  }, [assignees])
 
   const taskColumns = useMemo(
     () =>
@@ -93,8 +112,9 @@ export default function TaskPage() {
         onUpdateTask: handleUpdateTask,
         onDeleteTask: handleDeleteTask,
         onDuplicateTask: handleDuplicateTask,
+        assignees,
       }),
-    [handleDeleteTask, handleDuplicateTask, handleUpdateTask]
+    [assignees, handleDeleteTask, handleDuplicateTask, handleUpdateTask]
   )
 
   const stats = getTaskStats(tasks)
@@ -146,7 +166,7 @@ export default function TaskPage() {
                     <span className="text-2xl font-bold">{stats.total}</span>
                     <span className="flex items-center gap-0.5 text-sm text-green-500">
                       <ArrowUp className="size-3.5" />
-                      {getPercent(stats.completed)}%
+                      {getPercent(stats.done)}%
                     </span>
                   </div>
                 </div>
@@ -162,15 +182,13 @@ export default function TaskPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-muted-foreground text-sm font-medium">
-                    Completed
+                    Done
                   </p>
                   <div className="mt-1 flex items-baseline gap-2">
-                    <span className="text-2xl font-bold">
-                      {stats.completed}
-                    </span>
+                    <span className="text-2xl font-bold">{stats.done}</span>
                     <span className="flex items-center gap-0.5 text-sm text-green-500">
                       <ArrowUp className="size-3.5" />
-                      {getPercent(stats.completed)}%
+                      {getPercent(stats.done)}%
                     </span>
                   </div>
                 </div>
@@ -210,13 +228,13 @@ export default function TaskPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-muted-foreground text-sm font-medium">
-                    Pending
+                    To Do
                   </p>
                   <div className="mt-1 flex items-baseline gap-2">
-                    <span className="text-2xl font-bold">{stats.pending}</span>
+                    <span className="text-2xl font-bold">{stats.todo}</span>
                     <span className="flex items-center gap-0.5 text-sm text-orange-500">
                       <ArrowUp className="size-3.5" />
-                      {getPercent(stats.pending)}%
+                      {getPercent(stats.todo)}%
                     </span>
                   </div>
                 </div>
@@ -241,6 +259,7 @@ export default function TaskPage() {
               data={tasks}
               columns={taskColumns}
               onAddTask={handleAddTask}
+              assignees={assignees}
               onSeedTasks={handleSeedTasks}
               isSeedingTasks={isSeedingTasks}
             />

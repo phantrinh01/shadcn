@@ -21,30 +21,24 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
-  categories,
-  priorities,
-  statuses,
-} from "@/modules/tasks/services/task-mock-data"
 import {
   taskSchema,
   type Task,
+  type TaskAssignee,
 } from "@/modules/tasks/services/types/task-types"
+import {
+  parseTaskForm,
+  TaskFormFields,
+  taskToFormValues,
+  type TaskFormValues,
+} from "./task-form-fields"
 
 interface DataTableRowActionsProps<TData> {
   row: Row<TData>
   onUpdateTask?: (task: Task) => void | Promise<void>
   onDeleteTask?: (taskId: string) => void | Promise<void>
   onDuplicateTask?: (task: Task) => void | Promise<void>
+  assignees?: TaskAssignee[]
 }
 
 export function DataTableRowActions<TData>({
@@ -52,10 +46,14 @@ export function DataTableRowActions<TData>({
   onUpdateTask,
   onDeleteTask,
   onDuplicateTask,
+  assignees = [],
 }: DataTableRowActionsProps<TData>) {
   const parsed = taskSchema.safeParse(row.original)
   const [editOpen, setEditOpen] = React.useState(false)
-  const [draft, setDraft] = React.useState<Task | null>(null)
+  const [draft, setDraft] = React.useState<TaskFormValues | null>(null)
+  const [fieldErrors, setFieldErrors] = React.useState<Record<string, string>>(
+    {}
+  )
   const [isSaving, setIsSaving] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
 
@@ -66,21 +64,25 @@ export function DataTableRowActions<TData>({
   const task = parsed.data
 
   function openEditDialog() {
-    setDraft(task)
+    setDraft(taskToFormValues(task))
+    setFieldErrors({})
     setError(null)
     setEditOpen(true)
   }
 
   async function handleSaveEdit() {
-    if (!draft?.title.trim()) {
-      setError("Title is required")
+    if (!draft) return
+
+    const result = parseTaskForm(draft)
+    if (!result.success) {
+      setFieldErrors(result.errors)
       return
     }
 
     try {
       setIsSaving(true)
       setError(null)
-      await onUpdateTask?.({ ...draft, title: draft.title.trim() })
+      await onUpdateTask?.({ ...task, ...result.data })
       setEditOpen(false)
     } catch (saveError) {
       setError(
@@ -128,7 +130,7 @@ export function DataTableRowActions<TData>({
       </DropdownMenu>
 
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="sm:max-w-[525px]">
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[560px]">
           <DialogHeader>
             <DialogTitle>Edit Task</DialogTitle>
             <DialogDescription>
@@ -141,91 +143,13 @@ export function DataTableRowActions<TData>({
               {error ? (
                 <p className="text-sm text-destructive">{error}</p>
               ) : null}
-              <div className="space-y-2">
-                <Label htmlFor={`task-title-${task.id}`}>Task Title</Label>
-                <Input
-                  id={`task-title-${task.id}`}
-                  value={draft.title}
-                  onChange={(event) =>
-                    setDraft((current) =>
-                      current
-                        ? { ...current, title: event.target.value }
-                        : current
-                    )
-                  }
-                />
-              </div>
-
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label>Status</Label>
-                  <Select
-                    value={draft.status}
-                    onValueChange={(value) =>
-                      setDraft((current) =>
-                        current ? { ...current, status: value } : current
-                      )
-                    }
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {statuses.map((status) => (
-                        <SelectItem key={status.value} value={status.value}>
-                          {status.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Category</Label>
-                  <Select
-                    value={draft.category}
-                    onValueChange={(value) =>
-                      setDraft((current) =>
-                        current ? { ...current, category: value } : current
-                      )
-                    }
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((category) => (
-                        <SelectItem key={category.value} value={category.value}>
-                          {category.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Priority</Label>
-                <Select
-                  value={draft.priority}
-                  onValueChange={(value) =>
-                    setDraft((current) =>
-                      current ? { ...current, priority: value } : current
-                    )
-                  }
-                >
-                  <SelectTrigger className="w-full md:w-1/2">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {priorities.map((priority) => (
-                      <SelectItem key={priority.value} value={priority.value}>
-                        {priority.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <TaskFormFields
+                idPrefix={`edit-${task.id}`}
+                values={draft}
+                onChange={setDraft}
+                assignees={assignees}
+                errors={fieldErrors}
+              />
             </div>
           ) : null}
 

@@ -2,6 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import { toast } from "sonner"
 import {
   AlertTriangle,
   ArrowUp,
@@ -93,7 +94,9 @@ function TaskPageContent() {
           }))
         )
       } catch (error) {
-        console.error("Failed to load tasks:", error)
+        const message = error instanceof Error ? error.message : ""
+        if (message.startsWith("Chưa đăng nhập Firebase")) toast.error(message)
+        else console.error("Failed to load tasks:", error)
       } finally {
         setLoading(false)
       }
